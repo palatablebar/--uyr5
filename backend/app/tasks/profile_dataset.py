@@ -25,10 +25,11 @@ def profile_dataset(self, run_id: int) -> dict:
         try:
             columns = profile_service.compute_profiles(db, dataset, run)
         except Exception as exc:  # pragma: no cover - worker-side failure path
+            # roll back the half-written batch first so the failure commit
+            # below can never persist partial column rows
+            db.rollback()
             code = getattr(exc, "code", "QUAL-5000")
-            run.status = RuleRunStatus.FAILED.value
-            run.error_code = code
-            db.commit()
+            profile_service.mark_profile_failed(db, dataset, run, code)
             log_event("RUN_FAILED", run_id=run_id, error_code=code, reason=str(exc))
             raise
         return {"ok": True, "columns": columns}

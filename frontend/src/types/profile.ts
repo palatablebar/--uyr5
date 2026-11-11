@@ -45,6 +45,7 @@ export interface ProfilePayload {
     status: string
     uploaded_at: string | null
   }
+  /** 当前生效批次（columns 所属批次）；首次剖析成功前为 null */
   run: {
     run_id: number
     status: string
@@ -53,8 +54,25 @@ export interface ProfilePayload {
     duration_ms: number
     rows_scanned: number
   } | null
+  /** 最近一次剖析尝试（可能仍在执行或已失败），与生效批次无关 */
+  latest_run: {
+    run_id: number
+    status: string
+    error_code: string | null
+    started_at: string | null
+    finished_at: string | null
+  } | null
+  /** 生效批次相对上一批次的列变化；老数据无对比基线时为 null */
+  column_changes: ColumnChanges | null
   columns: ColumnProfile[]
   recommendations: RuleSuggestion[]
+}
+
+export interface ColumnChanges {
+  previous_run_id: number | null
+  added: string[]
+  removed: string[]
+  type_changed: Array<{ column_name: string; from: string; to: string }>
 }
 
 export interface RuleSuggestion {

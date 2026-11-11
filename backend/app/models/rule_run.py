@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.config.database import Base
@@ -26,10 +26,14 @@ class RuleRun(Base):
     duration_ms: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     report_no: Mapped[str | None] = mapped_column(String(40), nullable=True)
     error_code: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    # kind='profile' only: column diff vs the previously effective batch,
+    # captured at activation time — {"previous_run_id": int|None,
+    # "added": [...], "removed": [...], "type_changed": [{column_name, from, to}]}
+    profile_diff_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    dataset = relationship("Dataset", back_populates="runs")
+    dataset = relationship("Dataset", back_populates="runs", foreign_keys=[dataset_id])
     items = relationship("RuleRunItem", back_populates="run", cascade="all, delete-orphan")
     issues = relationship("Issue", back_populates="run", cascade="all, delete-orphan")

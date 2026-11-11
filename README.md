@@ -44,6 +44,7 @@ docker compose exec backend python -m scripts.seed_demo
 ## 主要功能
 
 - **列级剖析**：`profiling/loader.py` 读 CSV/Parquet/JSONL/XLSX（重复列名 400、非 UTF-8 400、超行数 400）；`type_infer.py` 抽样 1 万行按命中率 ≥0.95 判类型；`stats.py` 全量算空值率/基数/分位/Top 值；`pattern.py` 字符类归并推断正则与命中率；`outliers.py` IQR 1.5 倍异常值。
+- **剖析批次原子生效**：重算结果先写入新批次（`column_profiles.run_id`），整批计算成功后才在同一事务里把 `datasets.active_profile_run_id` 指向新批次、记录与上一批次的列差异（`rule_runs.profile_diff_json`）并清理被取代的旧行；失败批次只删除自己的残留行，报告单、列选择器、规则校验与规则建议始终只读当前生效批次。剖析页展示当前生效批次、最近处理状态与列变化；`(run_id, column_name)` 唯一约束 + 已成功批次短路保证同一批次重复运行不新增结果。
 - **规则构建与批量执行**：7 种 `RuleType` 各自独立校验器，pandas 向量化定位 + 逐条保留 `row_index` 与原文 `observed_value`，每规则最多落 `sample_limit` 条 Issue 但统计值记真实数量；违规行同时写入隔离卷 `run_XXXXXX_quarantine.csv`。
 - **问题分诊与指派**：状态机 `open → triaged → fixed/ignored`，支持按严重度/状态/规则筛选、批量指派、复制复现片段。
 - **审计与配额**：写操作在响应阶段写入 `audit_logs`（before/after 快照）；`users.daily_scan_quota` + Redis 滑动窗口 + `SETNX runlock:{dataset_id}` 保证同一数据集不并行执行，超限 429 并带 `retry_after`。

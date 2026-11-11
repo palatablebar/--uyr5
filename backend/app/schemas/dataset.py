@@ -30,3 +30,14 @@ def serialize_profile_run_ref(run) -> dict:
         "duration_ms": run.duration_ms,
         "rows_scanned": run.rows_scanned,
     }
+
+
+def serialize_profile_status_ref(run) -> dict:
+    """Latest-attempt view of a profiling batch (drives the status strip)."""
+    return {
+        "run_id": run.id,
+        "status": run.status,
+        "error_code": run.error_code,
+        "started_at": iso(run.started_at),
+        "finished_at": iso(run.finished_at),
+    }

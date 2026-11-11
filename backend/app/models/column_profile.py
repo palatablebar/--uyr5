@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, Numeric, String, func
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, Numeric, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.config.database import Base
@@ -9,6 +9,11 @@ from app.config.database import Base
 
 class ColumnProfile(Base):
     __tablename__ = "column_profiles"
+    # One row per (batch, column): re-running the same batch upserts instead of
+    # piling up duplicates.
+    __table_args__ = (
+        UniqueConstraint("run_id", "column_name", name="uq_column_profiles_run_column"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     dataset_id: Mapped[int] = mapped_column(ForeignKey("datasets.id"), nullable=False, index=True)

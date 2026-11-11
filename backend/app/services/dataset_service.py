@@ -13,10 +13,16 @@ from app.utils import storage
 from app.utils.logger import log_event
 
 
-def _profile_run(db: Session, dataset_id: int):
+def _profile_run(db: Session, dataset: Dataset):
+    """Effective profiling batch first; fall back to the latest attempt so a
+    failed re-profile is still visible as a status on the dataset list."""
+    if dataset.active_profile_run_id:
+        active = db.get(RuleRun, dataset.active_profile_run_id)
+        if active is not None:
+            return active
     return (
         db.query(RuleRun)
-        .filter(RuleRun.dataset_id == dataset_id, RuleRun.kind == "profile")
+        .filter(RuleRun.dataset_id == dataset.id, RuleRun.kind == "profile")
         .order_by(RuleRun.id.desc())
         .first()
     )
@@ -39,7 +45,7 @@ def _open_issue_count(db: Session, dataset_id: int) -> int:
 def serialize(db: Session, dataset: Dataset) -> dict:
     return serialize_dataset(
         dataset,
-        profile_run=_profile_run(db, dataset.id),
+        profile_run=_profile_run(db, dataset),
         rule_count=_rule_count(db, dataset.id),
         open_issues=_open_issue_count(db, dataset.id),
     )
@@ -141,6 +147,7 @@ def delete_dataset(db: Session, dataset: Dataset, actor: User) -> dict:
     before = {"id": dataset.id, "name": dataset.name}
     dataset.is_deleted = True
     dataset.status = "deleted"
+    dataset.active_profile_run_id = None
     db.query(QualityRule).filter(QualityRule.dataset_id == dataset.id).delete()
     db.query(ColumnProfile).filter(ColumnProfile.dataset_id == dataset.id).delete()
     db.commit()

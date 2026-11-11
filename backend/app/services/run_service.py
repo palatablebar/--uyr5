@@ -119,12 +119,14 @@ def build_report(db: Session, run: RuleRun) -> dict:
         .limit(200)
         .all()
     )
-    profiles = (
-        db.query(ColumnProfile)
-        .filter(ColumnProfile.dataset_id == run.dataset_id)
-        .order_by(ColumnProfile.ordinal.asc())
-        .all()
-    )
+    profiles = []
+    if dataset is not None and dataset.active_profile_run_id:
+        profiles = (
+            db.query(ColumnProfile)
+            .filter(ColumnProfile.run_id == dataset.active_profile_run_id)
+            .order_by(ColumnProfile.ordinal.asc())
+            .all()
+        )
     from app.utils.formatters import fmt_percentile, rule_param_summary
 
     return {

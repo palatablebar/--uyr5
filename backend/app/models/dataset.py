@@ -22,12 +22,22 @@ class Dataset(Base):
     file_size: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="uploaded")
     is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Points at the profiling batch (rule_runs.id, kind='profile') whose column
+    # results are currently effective. Only flipped after a whole batch
+    # computes successfully, so a failed re-profile never hides the last good
+    # snapshot. NULL until the first batch succeeds.
+    active_profile_run_id: Mapped[int | None] = mapped_column(
+        ForeignKey("rule_runs.id"), nullable=True, index=True
+    )
     uploaded_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     owner = relationship("User", back_populates="datasets", foreign_keys=[owner_id])
     profiles = relationship("ColumnProfile", back_populates="dataset", cascade="all, delete-orphan")
     rules = relationship("QualityRule", back_populates="dataset", cascade="all, delete-orphan")
-    runs = relationship("RuleRun", back_populates="dataset", cascade="all, delete-orphan")
+    runs = relationship(
+        "RuleRun", back_populates="dataset", cascade="all, delete-orphan",
+        foreign_keys="RuleRun.dataset_id",
+    )
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Dataset {self.name} rows={self.row_count}>"

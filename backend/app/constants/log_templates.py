@@ -17,6 +17,9 @@ LOG_TEMPLATES = {
     "PROFILE_ENQUEUED": "profile enqueued dataset_id={dataset_id} run_id={run_id}",
     "PROFILE_STARTED": "profile started dataset_id={dataset_id} run_id={run_id} rows={rows}",
     "PROFILE_FINISHED": "profile finished dataset_id={dataset_id} run_id={run_id} columns={columns} duration_ms={duration_ms}",
+    "PROFILE_ACTIVATED": "profile batch activated dataset_id={dataset_id} run_id={run_id} previous_run_id={previous_run_id} added={added} removed={removed} type_changed={type_changed}",
+    "PROFILE_BATCH_REUSED": "profile batch already succeeded, skipping recompute dataset_id={dataset_id} run_id={run_id} columns={columns}",
+    "PROFILE_FAILED_KEPT_ACTIVE": "profile failed, previous batch kept dataset_id={dataset_id} run_id={run_id} active_run_id={active_run_id} error_code={error_code}",
     "PROFILE_TIMEOUT": "profile timed out dataset_id={dataset_id} run_id={run_id} after_ms={duration_ms}",
     "PROFILE_RUN_LOCKED": "profile rejected, dataset run locked dataset_id={dataset_id} user_id={user_id}",
     # --- rules ---
@@ -44,6 +47,7 @@ LOG_TEMPLATES = {
     "SEED_DEMO_STARTED": "demo seed started",
     "SEED_DEMO_FINISHED": "demo seed finished datasets={datasets} rules={rules} runs={runs} issues={issues}",
     "SEED_DEMO_FAILED": "demo seed failed error={error}",
+    "SCHEMA_UPGRADE_STEP_FAILED": "schema upgrade step failed step={step} error={error}",
     "AUTH_LOGIN_SUCCEEDED": "login succeeded user_id={user_id} role={role}",
     "AUTH_LOGIN_FAILED": "login failed email={email} reason={reason}",
 }

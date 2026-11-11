@@ -25,7 +25,16 @@ def list_rules(db: Session, dataset_id: int | None = None, active_only: bool = F
 
 
 def _profile_columns(db: Session, dataset_id: int) -> dict[str, ColumnProfile]:
-    profiles = db.query(ColumnProfile).filter(ColumnProfile.dataset_id == dataset_id).all()
+    """Columns of the *effective* profiling batch only — rules must never be
+    built on top of a half-computed or superseded batch."""
+    dataset = db.get(Dataset, dataset_id)
+    if dataset is None or not dataset.active_profile_run_id:
+        return {}
+    profiles = (
+        db.query(ColumnProfile)
+        .filter(ColumnProfile.run_id == dataset.active_profile_run_id)
+        .all()
+    )
     return {profile.column_name: profile for profile in profiles}
 
 
@@ -177,13 +186,14 @@ def recommend(db: Session, dataset_id: int, limit: int = 5) -> list[dict]:
     dataset = db.get(Dataset, dataset_id)
     if dataset is None or dataset.is_deleted:
         raise AppError(ErrorCode.DATASET_NOT_FOUND, detail={"dataset_id": dataset_id})
-    profiles = [
-        profile
-        for profile in db.query(ColumnProfile)
-        .filter(ColumnProfile.dataset_id == dataset_id)
-        .order_by(ColumnProfile.ordinal.asc())
-        .all()
-    ]
+    profiles = []
+    if dataset.active_profile_run_id:
+        profiles = (
+            db.query(ColumnProfile)
+            .filter(ColumnProfile.run_id == dataset.active_profile_run_id)
+            .order_by(ColumnProfile.ordinal.asc())
+            .all()
+        )
     if not profiles:
         raise AppError(ErrorCode.PROFILE_NOT_READY, detail={"dataset_id": dataset_id})
     from app.schemas.profile import serialize_column_profile
